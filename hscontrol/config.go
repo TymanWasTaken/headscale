@@ -107,6 +107,7 @@ type OIDCConfig struct {
 	AllowedDomains             []string
 	AllowedUsers               []string
 	AllowedGroups              []string
+	GroupsClaim                string
 	StripEmaildomain           bool
 	UseUsernameClaim           bool
 	Expiry                     time.Duration
@@ -193,6 +194,7 @@ func LoadConfig(path string, isFile bool) error {
 	viper.SetDefault("oidc.only_start_if_oidc_is_available", true)
 	viper.SetDefault("oidc.expiry", "180d")
 	viper.SetDefault("oidc.use_expiry_from_token", false)
+	viper.SetDefault("oidc.groups_claim", "groups")
 
 	viper.SetDefault("logtail.enabled", false)
 	viper.SetDefault("randomize_client_port", false)
@@ -636,6 +638,7 @@ func GetHeadscaleConfig() (*Config, error) {
 			AllowedDomains:   viper.GetStringSlice("oidc.allowed_domains"),
 			AllowedUsers:     viper.GetStringSlice("oidc.allowed_users"),
 			AllowedGroups:    viper.GetStringSlice("oidc.allowed_groups"),
+			GroupsClaim:      viper.GetString("oidc.groups_claim"),
 			UseUsernameClaim: viper.GetBool("oidc.use_username_claim"),
 			StripEmaildomain: viper.GetBool("oidc.strip_email_domain"),
 			Expiry: func() time.Duration {

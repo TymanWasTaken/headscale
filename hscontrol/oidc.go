@@ -35,7 +35,7 @@ const (
 
 type IDTokenClaims struct {
 	Name     string   `json:"name,omitempty"`
-	Groups   []string `json:"groups,omitempty"`
+	Groups   []string `json:"-"`
 	Email    string   `json:"email"`
 	Username string   `json:"preferred_username,omitempty"`
 }
@@ -212,7 +212,7 @@ func (h *Headscale) OIDCCallback(
 	// 	return
 	// }
 
-	claims, err := extractIDTokenClaims(writer, idToken)
+	claims, err := h.extractIDTokenClaims(writer, idToken)
 	if err != nil {
 		return
 	}
@@ -371,12 +371,15 @@ func (h *Headscale) verifyIDTokenForOIDCCallback(
 	return idToken, nil
 }
 
-func extractIDTokenClaims(
+func (h *Headscale) extractIDTokenClaims(
 	writer http.ResponseWriter,
 	idToken *oidc.IDToken,
 ) (*IDTokenClaims, error) {
+	var raw_claims map[string]interface{}
 	var claims IDTokenClaims
-	if err := idToken.Claims(&claims); err != nil {
+	err := idToken.Claims(&raw_claims)
+	err2 := idToken.Claims(&claims)
+	if err != nil || err2 != nil {
 		log.Error().
 			Err(err).
 			Caller().
@@ -392,6 +395,16 @@ func extractIDTokenClaims(
 		}
 
 		return nil, err
+	}
+
+	groups, ok := raw_claims[h.cfg.OIDC.GroupsClaim].([]interface{})
+	if ok {
+		for _, group := range groups {
+			group, ok := group.(string)
+			if ok {
+				claims.Groups = append(claims.Groups, group)
+			}
+		}
 	}
 
 	return &claims, nil
